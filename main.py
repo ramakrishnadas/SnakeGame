@@ -1,4 +1,5 @@
 import arcade
+import random
 
 # ---- Constants ----
 SCREEN_WIDTH = 900
@@ -21,26 +22,34 @@ IMAGE_PATHS = {
     "body_topright": "graphics/body_topright.png",
     "body_topleft": "graphics/body_topleft.png",
     "body_bottomright": "graphics/body_bottomright.png",
-    "body_bottomleft": "graphics/body_bottomleft.png"
+    "body_bottomleft": "graphics/body_bottomleft.png",
+    "apple": "graphics/apple.png"
 }
 
 class gameWindow(arcade.Window):
     def __init__(self):
         # TRY
         # vsync=True !!!!!
-        super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE, center_window=True, update_rate=0.1)
+        super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE, center_window=True, update_rate=0.1, vsync=True)
         arcade.set_background_color(arcade.csscolor.BLACK)
 
     def setup(self):
         self.snake = Snake()
+        self.food = Food()
 
     def on_draw(self):
         arcade.start_render()
         for segment in self.snake.segments:
             segment.draw()
+        self.food.apple.draw()
     
     def on_update(self, delta_time):
         self.snake.move()
+
+        # Check if the snake's head collides with food
+        if arcade.check_for_collision(self.snake.segments[0], self.food.apple):
+            self.snake.grow()
+            self.food.reset_position()
 
     def on_key_press(self, key, modifiers):
         if key == arcade.key.UP:
@@ -164,6 +173,34 @@ class Snake(arcade.Sprite):
         if new_direction != opposite_directions.get(self.direction):
             self.direction = new_direction
 
+    def grow(self):
+        # Get the current tail segment and the one before it
+        tail = self.segments[-1]
+        prev_segment = self.segments[-2]
+
+        # Determine where to place the new segment based on the direction of the tail
+        if tail.center_x == prev_segment.center_x:
+            # Tail is vertical
+            new_segment = arcade.Sprite(IMAGE_PATHS["body_vertical"], scale=0.5)
+        else:
+            # Tail is horizontal
+            new_segment = arcade.Sprite(IMAGE_PATHS["body_horizontal"], scale=0.5)
+
+        # Insert the new segment before the tail
+        self.segments.insert(-1, new_segment)
+
+class Food(arcade.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.apple = arcade.Sprite(IMAGE_PATHS["apple"], scale=0.5)
+        self.reset_position()
+
+    def reset_position(self):
+        self.apple.center_x = random.randint(0, SCREEN_WIDTH // SNAKE_SIZE - 1) * SNAKE_SIZE
+        self.apple.center_y = random.randint(0, SCREEN_HEIGHT // SNAKE_SIZE - 1) * SNAKE_SIZE
+
+
+    
 
 def main():
     window = gameWindow()
